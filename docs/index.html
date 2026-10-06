@@ -128,7 +128,7 @@ footer a{color:var(--gold);}
     <div class="field"><label>New rate <span class="val num" id="v-newRate">6.50%</span></label>
       <input type="range" id="newRate" min="3" max="12" step="0.125" value="6.5"></div>
     <div class="field"><label>New term</label>
-      <select id="newTerm"><option value="360">30-year fixed</option><option value="240">20-year fixed</option><option value="180" selected>15-year fixed</option><option value="120">10-year fixed</option></select></div>
+      <select id="newTerm"><option value="360" selected>30-year fixed</option><option value="240">20-year fixed</option><option value="180">15-year fixed</option><option value="120">10-year fixed</option></select></div>
     <label class="toggle"><input type="checkbox" id="rollCosts"> Roll closing costs into the new loan</label>
     <label class="toggle"><input type="checkbox" id="noCost"> No-closing-cost refi (lender credit covers it all)</label>
   </div>
@@ -214,24 +214,20 @@ function readInputs(){
 }
 
 // Net benefit of refi after m months (positive = refi ahead), wealth-based.
+// Payments stop when each loan pays off — Math.min(m, term) is the fix that
+// makes shorter-term refis honest.
 function netBenefitAt(inp, m){
   var P1 = pmt(inp.bal, inp.r1, inp.n1);
   var principal = inp.roll ? inp.bal + inp.costs : inp.bal;
   var P2 = pmt(principal, inp.r2, inp.n2);
   var cashCosts = inp.roll ? 0 : inp.costs;
-  var oldPath = P1*m + balAfter(inp.bal, inp.r1, P1, m);
-  var newPath = P2*m + cashCosts + balAfter(principal, inp.r2, P2, m);
+  var oldPath = P1*Math.min(m, inp.n1) + balAfter(inp.bal, inp.r1, P1, m);
+  var newPath = P2*Math.min(m, inp.n2) + cashCosts + balAfter(principal, inp.r2, P2, m);
   return oldPath - newPath;
 }
-function breakEvenMonth(inp){
-  if(netBenefitAt(inp, inp.n2) < 0 && netBenefitAt(inp, inp.horizon) < 0) {
-    // check far out anyway (full new term)
-    if(netBenefitAt(inp, Math.max(inp.n1, inp.n2)) < 0) return -1;
-  }
-  var lo=0, hi=Math.max(inp.n1, inp.n2);
-  if(netBenefitAt(inp, hi) < 0) return -1;
-  while(lo < hi){ var mid=(lo+hi)>>1; if(netBenefitAt(inp, mid) >= 0) hi=mid; else lo=mid+1; }
-  return lo;
+function breakEvenMonth(inp, limit){
+  for(var m = 0; m <= limit; m++){ if(netBenefitAt(inp, m) >= 0) return m; }
+  return -1;
 }
 
 function render(){
@@ -253,27 +249,30 @@ function render(){
   var principal = inp.roll ? inp.bal + inp.costs : inp.bal;
   var P2 = pmt(principal, inp.r2, inp.n2);
   var save = P1 - P2;
-  var be = breakEvenMonth(inp);
+  var beH = breakEvenMonth(inp, inp.horizon);          // break-even inside your horizon
+  var beEver = breakEvenMonth(inp, Math.max(inp.n1, inp.n2)); // break-even ever
   var netH = netBenefitAt(inp, inp.horizon);
 
   $("o-save").textContent = (save<0?"−$":"$") + Math.abs(Math.round(save)).toLocaleString("en-US") + "/mo";
   $("o-pmts").textContent = fmt(P1)+"/mo now → "+fmt(P2)+"/mo after" + (inp.roll ? " (costs rolled in)" : "");
 
-  if(be < 0){
+  if(beH < 0 && beEver < 0){
     $("o-be").textContent = "Never";
-    $("o-beNote").textContent = "The refi never pays for itself — not even over the full term.";
-  } else if(be === 0){
+    $("o-beNote").textContent = "The refi never pays for itself — not in your horizon, not ever.";
+  } else if(beH < 0){
+    $("o-be").textContent = "Month " + beEver;
+    $("o-beNote").textContent = "It breaks even eventually — but after you\u2019ll have sold. Useless to you.";
+  } else if(beH === 0){
     $("o-be").textContent = "Month 1";
     $("o-beNote").textContent = "No closing costs — every month is gravy from day one.";
   } else {
-    $("o-be").textContent = "Month " + be;
-    var yrs = (be/12);
-    $("o-beNote").textContent = "Roughly " + (yrs<1 ? be+" months" : yrs.toFixed(1)+" years") + " until the savings repay the costs.";
+    $("o-be").textContent = "Month " + beH;
+    var yrs = (beH/12);
+    $("o-beNote").textContent = "Roughly " + (yrs<1 ? beH+" months" : yrs.toFixed(1)+" years") + " until the savings repay the costs.";
   }
 
-  var oldTot = P1*inp.horizon + 0; // payments only over horizon; remaining balance cancels in net
-  $("o-oldTotal").textContent = fmt(P1*inp.horizon);
-  $("o-newTotal").textContent = fmt(P2*inp.horizon + (inp.roll?0:inp.costs));
+  $("o-oldTotal").textContent = fmt(P1*Math.min(inp.horizon, inp.n1));
+  $("o-newTotal").textContent = fmt(P2*Math.min(inp.horizon, inp.n2) + (inp.roll?0:inp.costs));
   var netEl = $("o-net");
   netEl.textContent = fmtSigned(netH);
   netEl.style.color = netH >= 0 ? "var(--gold)" : "var(--bad)";
@@ -284,18 +283,18 @@ function render(){
   if(save <= 0 && netH <= 0){
     box.classList.add("skip"); word.textContent = "SKIP";
     why.innerHTML = "This refi <strong>raises</strong> your payment by "+fmt(-save)+"/mo and still loses "+fmt(-netH)+" over your horizon. The lender can keep this offer.";
-  } else if(be < 0){
+  } else if(beH < 0 && beEver < 0){
     box.classList.add("skip"); word.textContent = "SKIP";
-    why.innerHTML = "It never breaks even &mdash; not over your horizon, not over the full term. A lower rate isn&rsquo;t a better deal when the costs eat it alive.";
-  } else if(be > inp.horizon){
+    why.innerHTML = "It never breaks even &mdash; not in your horizon, not ever. A lower rate isn&rsquo;t a better deal when the costs eat it alive.";
+  } else if(beH < 0){
     box.classList.add("skip"); word.textContent = "SKIP";
-    why.innerHTML = "Break-even lands at month <strong>"+be+"</strong>, but you&rsquo;ll be out in "+inp.horizon+" months. You&rsquo;d hand the lender "+fmt(inp.roll?0:inp.costs)+" and leave before it pays you back.";
-  } else if(be <= 24){
+    why.innerHTML = "Break-even lands at month <strong>"+beEver+"</strong>, but you&rsquo;ll be out in "+inp.horizon+" months. You&rsquo;d hand the lender "+fmt(inp.roll?0:inp.costs)+" and leave before it pays you back.";
+  } else if(beH <= 24){
     box.classList.add("refi"); word.textContent = "REFI";
-    why.innerHTML = "Break-even in <strong>month "+be+"</strong> &mdash; inside two years &mdash; and you keep the loan "+inp.horizon+" months. Net gain: <strong>"+fmtSigned(netH)+"</strong>. Take the money.";
+    why.innerHTML = "Break-even in <strong>month "+beH+"</strong> &mdash; inside two years &mdash; and you keep the loan "+inp.horizon+" months. Net gain: <strong>"+fmtSigned(netH)+"</strong>. Take the money.";
   } else {
     box.classList.add("edge"); word.textContent = "BORDERLINE";
-    why.innerHTML = "Break-even at <strong>month "+be+"</strong> with a net of <strong>"+fmtSigned(netH)+"</strong> over your horizon. It works, but only if you actually stay the full "+(inp.horizon/12)+" years. Save it as a watch and revisit if rates slip further.";
+    why.innerHTML = "Break-even at <strong>month "+beH+"</strong> with a net of <strong>"+fmtSigned(netH)+"</strong> over your horizon. It works, but only if you actually stay the full "+(inp.horizon/12)+" years. Save it as a watch and revisit if rates slip further.";
   }
   renderWatches();
 }
@@ -310,7 +309,7 @@ function snapshot(inp){
   var principal=inp.roll?inp.bal+inp.costs:inp.bal;
   var P2=pmt(principal,inp.r2,inp.n2);
   return { bal:inp.bal, r1:inp.r1, r2:inp.r2, n2:inp.n2, costs:inp.costs,
-    save:Math.round(P1-P2), be:breakEvenMonth(inp), net:Math.round(netBenefitAt(inp,inp.horizon)) };
+    save:Math.round(P1-P2), be:breakEvenMonth(inp, inp.horizon), net:Math.round(netBenefitAt(inp,inp.horizon)) };
 }
 
 $("saveWatch").addEventListener("click", function(){
