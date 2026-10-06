@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Refinance Break-Even — The Bull Brew</title>
+<meta name="description" content="Rates dropped — should you refi? Honest break-even math: monthly savings vs closing costs, and the exact month the refi starts paying you back.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#10141A">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<style>
+:root{
+  --bg:#10141A; --surface:#171D26; --surface2:#1D242F; --line:#2A3342; --line-soft:#232B38;
+  --text:#EEF1F4; --muted:#9AA4B2; --gold:#C0A060; --gold-dim:#8A7346;
+  --blue:#3A4A5C; --blue-lt:#7A8BA0; --bad:#A04432; --good:#C0A060;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{-webkit-text-size-adjust:100%;}
+body{background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.55; padding-bottom:64px;}
+.serif{font-family:Georgia,"Times New Roman",Times,serif;}
+.num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum";}
+.wrap{max-width:1060px; margin:0 auto; padding:0 20px;}
+header.hero{padding:44px 0 8px; border-bottom:1px solid var(--line);}
+.eyebrow{color:var(--gold); font-size:11px; letter-spacing:.22em; text-transform:uppercase; font-weight:600;}
+h1{font-family:Georgia,"Times New Roman",serif; font-size:clamp(34px,6vw,54px); font-weight:700; line-height:1.08; margin:12px 0 10px;}
+h1 .gold{color:var(--gold);}
+.lede{color:var(--muted); font-size:17px; max-width:640px;}
+.lede strong{color:var(--text);}
+.steps{display:grid; grid-template-columns:repeat(3,1fr); gap:0; margin:26px 0 34px; border:1px solid var(--line); border-radius:2px; overflow:hidden;}
+.step{padding:18px 20px; background:var(--surface); border-left:1px solid var(--line);}
+.step:first-child{border-left:none;}
+.step .n{font-family:Georgia,serif; font-size:26px; color:var(--gold);}
+.step .t{font-size:13.5px; color:var(--muted); margin-top:4px;}
+.step .t strong{color:var(--text);}
+@media(max-width:640px){.steps{grid-template-columns:1fr;} .step{border-left:none; border-top:1px solid var(--line);} .step:first-child{border-top:none;}}
+h2.sec{font-family:Georgia,serif; font-size:22px; margin:34px 0 4px; padding-bottom:10px; border-bottom:1px solid var(--line);}
+h2.sec .rule{display:inline-block; width:26px; height:2px; background:var(--gold); vertical-align:middle; margin-right:10px;}
+.sub{color:var(--muted); font-size:13.5px; margin-bottom:16px;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+@media(max-width:720px){.grid2{grid-template-columns:1fr;}}
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:2px; padding:20px 22px;}
+.panel h3{font-family:Georgia,serif; font-size:17px; color:var(--gold); letter-spacing:.02em; margin-bottom:2px;}
+.panel .hint{font-size:12.5px; color:var(--muted); margin-bottom:14px;}
+.field{margin-bottom:14px;}
+.field label{display:flex; justify-content:space-between; font-size:13px; color:var(--muted); margin-bottom:6px; letter-spacing:.02em;}
+.field label .val{color:var(--text); font-weight:600;}
+input[type=number],input[type=text],select{width:100%; background:var(--bg); border:1px solid var(--line); border-radius:2px; color:var(--text); font-size:16px; padding:10px 12px; font-variant-numeric:tabular-nums;}
+input[type=number]:focus,input[type=text]:focus,select:focus{outline:none; border-color:var(--gold);}
+input[type=range]{width:100%; accent-color:var(--gold); height:28px; cursor:pointer;}
+.rowline{display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-top:1px solid var(--line-soft); font-size:14px;}
+.rowline:first-of-type{border-top:none;}
+.rowline .k{color:var(--muted);}
+.rowline .v{font-weight:600;}
+.bigstat{background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--gold); border-radius:2px; padding:18px 22px; margin-top:16px;}
+.bigstat .k{font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted);}
+.bigstat .v{font-family:Georgia,serif; font-size:clamp(30px,5vw,44px); color:var(--gold); margin-top:4px;}
+.bigstat .note{font-size:13px; color:var(--muted); margin-top:6px;}
+.verdict{margin-top:16px; background:var(--surface); border:1px solid var(--line); border-radius:2px; padding:26px 24px; text-align:center;}
+.verdict .word{font-family:Georgia,serif; font-size:clamp(38px,7vw,58px); letter-spacing:.06em; margin-bottom:8px;}
+.verdict.refi .word{color:var(--gold);}
+.verdict.skip .word{color:var(--bad);}
+.verdict.edge .word{color:var(--blue-lt);}
+.verdict p{color:var(--muted); font-size:15px; max-width:620px; margin:0 auto;}
+.verdict p strong{color:var(--text);}
+.btn{display:inline-block; border:none; cursor:pointer; font-size:13px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; padding:13px 26px; border-radius:2px; text-decoration:none;}
+.btn-gold{background:var(--gold); color:#10141A;}
+.btn-gold:hover{background:#D0AF70;}
+.btn-ghost{background:transparent; color:var(--gold); border:1px solid var(--gold);}
+.btn-ghost:hover{background:rgba(192,160,96,.1);}
+.btnrow{display:flex; gap:12px; flex-wrap:wrap; margin-top:18px;}
+.toggle{display:flex; align-items:center; gap:10px; font-size:14px; color:var(--muted); margin:12px 0; cursor:pointer;}
+.toggle input{width:18px; height:18px; accent-color:var(--gold); cursor:pointer;}
+details.explain{margin-top:16px; background:var(--surface); border:1px solid var(--line); border-radius:2px; padding:16px 20px;}
+details.explain summary{cursor:pointer; font-family:Georgia,serif; font-size:16px; color:var(--gold);}
+details.explain p{font-size:14px; color:var(--muted); margin-top:10px;}
+details.explain p strong{color:var(--text);}
+.watch{border:1px solid var(--line); border-radius:2px; background:var(--surface2); padding:14px 16px; margin-top:10px;}
+.watch .wh{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+.watch .wn{font-weight:700; font-size:15px;}
+.watch .wd{font-size:12px; color:var(--muted);}
+.watch .wm{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px; font-size:13px;}
+.watch .wm .k{font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted);}
+.watch .wm .v{font-weight:700; margin-top:2px;}
+.watch .del{background:none; border:1px solid var(--line); color:var(--muted); border-radius:2px; padding:6px 12px; font-size:12px; cursor:pointer; margin-top:10px;}
+.watch .del:hover{color:var(--bad); border-color:var(--bad);}
+.empty{color:var(--muted); font-size:14px; padding:18px 0; font-style:italic;}
+footer{margin-top:44px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:12.5px;}
+footer a{color:var(--gold);}
+.kv{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;}
+@media(max-width:720px){.kv{grid-template-columns:1fr;} .watch .wm{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">The Bull Brew &middot; Daily Tool</div>
+  <h1>Refinance <span class="gold">Break-Even</span></h1>
+  <p class="lede">Rates dropped &mdash; should you refi? This runs the honest math: <strong>monthly savings versus closing costs</strong>, and the exact month the refinance starts paying you back. No banker spin.</p>
+  <div class="steps">
+    <div class="step"><div class="n">I.</div><div class="t"><strong>Enter your loan</strong> &mdash; balance, rate, and the years left on it.</div></div>
+    <div class="step"><div class="n">II.</div><div class="t"><strong>Enter the offer</strong> &mdash; the new rate, term, and every dollar of closing costs.</div></div>
+    <div class="step"><div class="n">III.</div><div class="t"><strong>Read the verdict</strong> &mdash; refi, skip, or borderline, with the break-even month to prove it.</div></div>
+  </div>
+</header>
+
+<h2 class="sec"><span class="rule"></span>Your loan right now</h2>
+<p class="sub">The deal you already have. Be honest about the remaining term &mdash; it changes everything.</p>
+<div class="panel">
+  <div class="grid2">
+    <div class="field"><label>Current balance <span class="val num" id="v-curBal">$300,000</span></label>
+      <input type="range" id="curBal" min="50000" max="1500000" step="5000" value="300000"></div>
+    <div class="field"><label>Current rate <span class="val num" id="v-curRate">7.50%</span></label>
+      <input type="range" id="curRate" min="3" max="12" step="0.125" value="7.5"></div>
+    <div class="field"><label>Years left on it <span class="val num" id="v-curTerm">25 yrs</span></label>
+      <input type="range" id="curTerm" min="5" max="30" step="1" value="25"></div>
+    <div class="field"><label>You&rsquo;ll sell or refi again in <span class="val num" id="v-horizon">7 yrs</span></label>
+      <input type="range" id="horizon" min="1" max="30" step="1" value="7"></div>
+  </div>
+</div>
+
+<h2 class="sec"><span class="rule"></span>The refi offer</h2>
+<p class="sub">Drag the new rate and watch the break-even move live. That&rsquo;s the whole game.</p>
+<div class="grid2">
+  <div class="panel">
+    <h3>Terms</h3><div class="hint">What the lender is putting on the table.</div>
+    <div class="field"><label>New rate <span class="val num" id="v-newRate">6.50%</span></label>
+      <input type="range" id="newRate" min="3" max="12" step="0.125" value="6.5"></div>
+    <div class="field"><label>New term</label>
+      <select id="newTerm"><option value="360">30-year fixed</option><option value="240">20-year fixed</option><option value="180" selected>15-year fixed</option><option value="120">10-year fixed</option></select></div>
+    <label class="toggle"><input type="checkbox" id="rollCosts"> Roll closing costs into the new loan</label>
+    <label class="toggle"><input type="checkbox" id="noCost"> No-closing-cost refi (lender credit covers it all)</label>
+  </div>
+  <div class="panel">
+    <h3>Closing costs</h3><div class="hint">Itemize it. &ldquo;No closing cost&rdquo; just means a higher rate &mdash; check the toggle instead of lying to yourself.</div>
+    <div id="costFields">
+      <div class="field"><label>Origination fee <span class="val num" id="v-cOrig">$1,500</span></label><input type="range" id="cOrig" min="0" max="10000" step="50" value="1500"></div>
+      <div class="field"><label>Points (prepaid interest) <span class="val num" id="v-cPts">$3,000</span></label><input type="range" id="cPts" min="0" max="15000" step="50" value="3000"></div>
+      <div class="field"><label>Appraisal <span class="val num" id="v-cApr">$600</span></label><input type="range" id="cApr" min="0" max="2000" step="25" value="600"></div>
+      <div class="field"><label>Title &amp; closing <span class="val num" id="v-cTitle">$900</span></label><input type="range" id="cTitle" min="0" max="5000" step="25" value="900"></div>
+    </div>
+    <div class="rowline"><span class="k">Total closing costs</span><span class="v num" id="costTotal">$6,000</span></div>
+  </div>
+</div>
+
+<h2 class="sec"><span class="rule"></span>The math</h2>
+<p class="sub">Annual, all-in, no romance. Computed month-by-month against the loan you already have.</p>
+<div class="kv">
+  <div class="bigstat"><div class="k">Monthly savings</div><div class="v num" id="o-save">$0/mo</div><div class="note num" id="o-pmts"></div></div>
+  <div class="bigstat"><div class="k">Break-even month</div><div class="v num" id="o-be">—</div><div class="note" id="o-beNote"></div></div>
+</div>
+<div class="panel" style="margin-top:16px;">
+  <h3>Over your horizon</h3><div class="hint" id="o-horizonHint">What each path costs you in the years you&rsquo;ll actually keep the loan.</div>
+  <div class="rowline"><span class="k">Stay the course &mdash; total paid</span><span class="v num" id="o-oldTotal">$0</span></div>
+  <div class="rowline"><span class="k">Refi &mdash; total paid (incl. costs)</span><span class="v num" id="o-newTotal">$0</span></div>
+  <div class="rowline"><span class="k">Net benefit of the refi</span><span class="v num" id="o-net">$0</span></div>
+</div>
+
+<div class="verdict" id="verdictBox">
+  <div class="word" id="v-word">—</div>
+  <p id="v-why"></p>
+</div>
+
+<details class="explain">
+  <summary>Points vs. lender credits, in plain English</summary>
+  <p><strong>Points</strong> are prepaid interest: you hand the lender cash at closing (1 point = 1% of the loan) and they hand you a lower rate. Points only make sense if you keep the loan long enough for the monthly savings to repay them &mdash; that&rsquo;s exactly what the break-even month above tells you.</p>
+  <p><strong>Lender credits</strong> are the mirror image: the lender covers your closing costs, but charges you a <em>higher</em> rate to do it. A &ldquo;no-closing-cost refi&rdquo; isn&rsquo;t free &mdash; you pay for it every month for years. Use the toggle above and compare honestly.</p>
+  <p>Rule of thumb this tool enforces: <strong>never pay points you won&rsquo;t outlive.</strong> If the break-even month lands after your horizon, the points were a donation.</p>
+</details>
+
+<div class="btnrow">
+  <button class="btn btn-gold" id="saveWatch">Save this watch</button>
+</div>
+
+<h2 class="sec"><span class="rule"></span>Your watches</h2>
+<p class="sub">Log offers as rates move. Compare them side by side when it&rsquo;s time to pull the trigger.</p>
+<div id="watchList"><p class="empty">No watches yet. Dial in an offer above and save it.</p></div>
+
+<footer>
+  Built by <a href="https://github.com/thebullbrew">The Bull Brew</a> &middot; runs entirely in your browser, nothing leaves your device &middot; estimates only, not financial advice.
+</footer>
+</div>
+
+<script>
+"use strict";
+var $ = function(id){ return document.getElementById(id); };
+
+function pmt(balance, annualRate, months){
+  var r = annualRate/1200;
+  if(r <= 0) return balance/months;
+  var f = Math.pow(1+r, months);
+  return balance*r*f/(f-1);
+}
+function balAfter(balance, annualRate, payment, k){
+  var r = annualRate/1200;
+  if(k <= 0) return balance;
+  if(r <= 0) return Math.max(0, balance - payment*k);
+  var f = Math.pow(1+r, k);
+  return Math.max(0, balance*f - payment*(f-1)/r);
+}
+function fmt(n){ return (n<0?"-$":"$") + Math.abs(Math.round(n)).toLocaleString("en-US"); }
+function fmtSigned(n){ return (n<0?"−$":"+$") + Math.abs(Math.round(n)).toLocaleString("en-US"); }
+
+function readInputs(){
+  var noCost = $("noCost").checked;
+  var costs = noCost ? 0 : (+$("cOrig").value + +$("cPts").value + +$("cApr").value + +$("cTitle").value);
+  return {
+    bal:+$("curBal").value, r1:+$("curRate").value, n1:+$("curTerm").value*12,
+    r2:+$("newRate").value, n2:+$("newTerm").value,
+    costs:costs, roll:$("rollCosts").checked && !noCost, noCost:noCost,
+    horizon:+$("horizon").value*12
+  };
+}
+
+// Net benefit of refi after m months (positive = refi ahead), wealth-based.
+function netBenefitAt(inp, m){
+  var P1 = pmt(inp.bal, inp.r1, inp.n1);
+  var principal = inp.roll ? inp.bal + inp.costs : inp.bal;
+  var P2 = pmt(principal, inp.r2, inp.n2);
+  var cashCosts = inp.roll ? 0 : inp.costs;
+  var oldPath = P1*m + balAfter(inp.bal, inp.r1, P1, m);
+  var newPath = P2*m + cashCosts + balAfter(principal, inp.r2, P2, m);
+  return oldPath - newPath;
+}
+function breakEvenMonth(inp){
+  if(netBenefitAt(inp, inp.n2) < 0 && netBenefitAt(inp, inp.horizon) < 0) {
+    // check far out anyway (full new term)
+    if(netBenefitAt(inp, Math.max(inp.n1, inp.n2)) < 0) return -1;
+  }
+  var lo=0, hi=Math.max(inp.n1, inp.n2);
+  if(netBenefitAt(inp, hi) < 0) return -1;
+  while(lo < hi){ var mid=(lo+hi)>>1; if(netBenefitAt(inp, mid) >= 0) hi=mid; else lo=mid+1; }
+  return lo;
+}
+
+function render(){
+  var inp = readInputs();
+  // labels
+  $("v-curBal").textContent = fmt(inp.bal);
+  $("v-curRate").textContent = inp.r1.toFixed(2)+"%";
+  $("v-curTerm").textContent = (inp.n1/12)+" yrs";
+  $("v-horizon").textContent = (inp.horizon/12)+" yrs";
+  $("v-newRate").textContent = inp.r2.toFixed(3).replace(/0+$/,"").replace(/\.$/,"")+"%";
+  $("v-cOrig").textContent = fmt(+$("cOrig").value);
+  $("v-cPts").textContent = fmt(+$("cPts").value);
+  $("v-cApr").textContent = fmt(+$("cApr").value);
+  $("v-cTitle").textContent = fmt(+$("cTitle").value);
+  $("costTotal").textContent = inp.noCost ? "$0 (lender credit)" : fmt(inp.costs);
+  $("costFields").style.opacity = inp.noCost ? ".35" : "1";
+
+  var P1 = pmt(inp.bal, inp.r1, inp.n1);
+  var principal = inp.roll ? inp.bal + inp.costs : inp.bal;
+  var P2 = pmt(principal, inp.r2, inp.n2);
+  var save = P1 - P2;
+  var be = breakEvenMonth(inp);
+  var netH = netBenefitAt(inp, inp.horizon);
+
+  $("o-save").textContent = (save<0?"−$":"$") + Math.abs(Math.round(save)).toLocaleString("en-US") + "/mo";
+  $("o-pmts").textContent = fmt(P1)+"/mo now → "+fmt(P2)+"/mo after" + (inp.roll ? " (costs rolled in)" : "");
+
+  if(be < 0){
+    $("o-be").textContent = "Never";
+    $("o-beNote").textContent = "The refi never pays for itself — not even over the full term.";
+  } else if(be === 0){
+    $("o-be").textContent = "Month 1";
+    $("o-beNote").textContent = "No closing costs — every month is gravy from day one.";
+  } else {
+    $("o-be").textContent = "Month " + be;
+    var yrs = (be/12);
+    $("o-beNote").textContent = "Roughly " + (yrs<1 ? be+" months" : yrs.toFixed(1)+" years") + " until the savings repay the costs.";
+  }
+
+  var oldTot = P1*inp.horizon + 0; // payments only over horizon; remaining balance cancels in net
+  $("o-oldTotal").textContent = fmt(P1*inp.horizon);
+  $("o-newTotal").textContent = fmt(P2*inp.horizon + (inp.roll?0:inp.costs));
+  var netEl = $("o-net");
+  netEl.textContent = fmtSigned(netH);
+  netEl.style.color = netH >= 0 ? "var(--gold)" : "var(--bad)";
+  $("o-horizonHint").textContent = "Over the "+(inp.horizon/12)+" year"+(inp.horizon/12===1?"":"s")+" you\u2019ll actually keep the loan.";
+
+  var box = $("verdictBox"), word=$("v-word"), why=$("v-why");
+  box.className = "verdict";
+  if(save <= 0 && netH <= 0){
+    box.classList.add("skip"); word.textContent = "SKIP";
+    why.innerHTML = "This refi <strong>raises</strong> your payment by "+fmt(-save)+"/mo and still loses "+fmt(-netH)+" over your horizon. The lender can keep this offer.";
+  } else if(be < 0){
+    box.classList.add("skip"); word.textContent = "SKIP";
+    why.innerHTML = "It never breaks even &mdash; not over your horizon, not over the full term. A lower rate isn&rsquo;t a better deal when the costs eat it alive.";
+  } else if(be > inp.horizon){
+    box.classList.add("skip"); word.textContent = "SKIP";
+    why.innerHTML = "Break-even lands at month <strong>"+be+"</strong>, but you&rsquo;ll be out in "+inp.horizon+" months. You&rsquo;d hand the lender "+fmt(inp.roll?0:inp.costs)+" and leave before it pays you back.";
+  } else if(be <= 24){
+    box.classList.add("refi"); word.textContent = "REFI";
+    why.innerHTML = "Break-even in <strong>month "+be+"</strong> &mdash; inside two years &mdash; and you keep the loan "+inp.horizon+" months. Net gain: <strong>"+fmtSigned(netH)+"</strong>. Take the money.";
+  } else {
+    box.classList.add("edge"); word.textContent = "BORDERLINE";
+    why.innerHTML = "Break-even at <strong>month "+be+"</strong> with a net of <strong>"+fmtSigned(netH)+"</strong> over your horizon. It works, but only if you actually stay the full "+(inp.horizon/12)+" years. Save it as a watch and revisit if rates slip further.";
+  }
+  renderWatches();
+}
+
+function getWatches(){
+  try{ var w = JSON.parse(localStorage.getItem("refi-watches")||"[]"); return Array.isArray(w)?w:[]; }catch(e){ return []; }
+}
+function setWatches(w){ localStorage.setItem("refi-watches", JSON.stringify(w)); }
+
+function snapshot(inp){
+  var P1=pmt(inp.bal,inp.r1,inp.n1);
+  var principal=inp.roll?inp.bal+inp.costs:inp.bal;
+  var P2=pmt(principal,inp.r2,inp.n2);
+  return { bal:inp.bal, r1:inp.r1, r2:inp.r2, n2:inp.n2, costs:inp.costs,
+    save:Math.round(P1-P2), be:breakEvenMonth(inp), net:Math.round(netBenefitAt(inp,inp.horizon)) };
+}
+
+$("saveWatch").addEventListener("click", function(){
+  var inp = readInputs(), s = snapshot(inp), w = getWatches();
+  var d = new Date();
+  w.unshift({ name: inp.r1.toFixed(2)+"% → "+inp.r2.toFixed(2)+"% · "+fmt(inp.costs)+" costs",
+    date: d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}), s:s });
+  setWatches(w.slice(0,12));
+  renderWatches();
+});
+
+function renderWatches(){
+  var w = getWatches(), el = $("watchList");
+  if(!w.length){ el.innerHTML = '<p class="empty">No watches yet. Dial in an offer above and save it.</p>'; return; }
+  el.innerHTML = "";
+  w.forEach(function(it, i){
+    var d = document.createElement("div"); d.className="watch";
+    var beTxt = it.s.be<0 ? "Never" : (it.s.be===0?"Mo 1":"Mo "+it.s.be);
+    d.innerHTML =
+      '<div class="wh"><div><div class="wn num">'+it.name+'</div><div class="wd">'+it.date+'</div></div></div>'+
+      '<div class="wm num">'+
+      '<div><div class="k">Saves</div><div class="v">'+(it.s.save<0?"−$":"$")+Math.abs(it.s.save).toLocaleString("en-US")+'/mo</div></div>'+
+      '<div><div class="k">Break-even</div><div class="v">'+beTxt+'</div></div>'+
+      '<div><div class="k">Net</div><div class="v">'+(it.s.net<0?"−$":"+$")+Math.abs(it.s.net).toLocaleString("en-US")+'</div></div>'+
+      '<div><div class="k">New term</div><div class="v">'+(it.s.n2/12)+' yr</div></div>'+
+      '</div><button class="del" data-i="'+i+'">Delete</button>';
+    el.appendChild(d);
+  });
+  el.querySelectorAll(".del").forEach(function(b){
+    b.addEventListener("click", function(){
+      var w2=getWatches(); w2.splice(+b.getAttribute("data-i"),1); setWatches(w2); renderWatches();
+    });
+  });
+}
+
+["curBal","curRate","curTerm","horizon","newRate","cOrig","cPts","cApr","cTitle"].forEach(function(id){
+  $(id).addEventListener("input", render);
+});
+["newTerm","rollCosts","noCost"].forEach(function(id){
+  $(id).addEventListener("change", render);
+});
+render();
+</script>
+</body>
+</html>
